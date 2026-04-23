@@ -1,3 +1,8 @@
 .DS_Store
-uploads/
 node_modules/
+dist/
+.astro/
+.env
+.env.*
+!.env.example
+uploads/

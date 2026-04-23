@@ -1,4 +1,4 @@
-const { useState, useMemo, useEffect, useRef, useCallback } = React;
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 
 /* ===========================================================
    Icons (inline, stroke-based, neutral)
@@ -1308,4 +1308,4 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+export default App;
