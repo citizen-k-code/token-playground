@@ -20,6 +20,13 @@ const { title = 'Token Playground' } = Astro.props;
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Flex:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
+    <script is:inline>
+      try {
+        if (localStorage.getItem('navCollapsed') === '1') {
+          document.documentElement.dataset.navCollapsed = '1';
+        }
+      } catch (_) {}
+    </script>
   </head>
   <body>
     <slot />

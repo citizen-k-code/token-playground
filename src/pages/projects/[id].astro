@@ -1,0 +1,15 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import App from '../../components/App.jsx';
+import { ROWS } from '../../data/rows.js';
+
+export function getStaticPaths() {
+  return ROWS.map(row => ({ params: { id: row.id } }));
+}
+
+const { id } = Astro.params;
+---
+
+<Layout title={`Project ${id} · Token Playground`}>
+  <App client:load detailId={id} />
+</Layout>

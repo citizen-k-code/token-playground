@@ -1,105 +1,26 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import Sidebar from './Sidebar.jsx';
+import Icon from './Icon.jsx';
+import ProgressBar from './ProgressBar.jsx';
+import DetailPage from './DetailPage.jsx';
+import TeamMemberPage from './TeamMemberPage.jsx';
+import MemberEntryModal from './MemberEntryModal.jsx';
+import FilterModal from './FilterModal.jsx';
+import FilterPopover from './FilterPopover.jsx';
+import {
+  OWNERS, STATUSES, PRIORITIES, REGIONS, ROWS,
+  statusBadge, priorityBadge, memberStatusBadge, fmtMoney, fmtDate, initials,
+} from '../data/rows.js';
 
-/* ===========================================================
-   Icons (inline, stroke-based, neutral)
-=========================================================== */
-const Icon = ({ name, size = 18, stroke = 1.75 }) => {
-  const s = { width: size, height: size, fill: 'none', stroke: 'currentColor', strokeWidth: stroke, strokeLinecap: 'round', strokeLinejoin: 'round' };
-  const paths = {
-    search: <><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></>,
-    dashboard: <><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></>,
-    inbox: <><path d="M3 12h5l2 3h4l2-3h5"/><path d="M5 5h14l2 7v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7z"/></>,
-    users: <><circle cx="9" cy="8" r="4"/><path d="M2 21c0-3.9 3.1-7 7-7s7 3.1 7 7"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M22 21c0-3-2-5.5-5-6.5"/></>,
-    chart: <><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/></>,
-    settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>,
-    file: <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></>,
-    folder: <><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></>,
-    tag: <><path d="M20.6 13.4 12 22l-9-9V3h10l9 9a1.4 1.4 0 0 1 0 2z"/><circle cx="7" cy="7" r="1.5"/></>,
-    plus: <><path d="M12 5v14M5 12h14"/></>,
-    filter: <><path d="M3 4h18l-7 9v6l-4 2v-8z"/></>,
-    x: <><path d="M6 6l12 12M18 6 6 18"/></>,
-    caret: <><path d="m6 9 6 6 6-6"/></>,
-    up: <><path d="m6 15 6-6 6 6"/></>,
-    down: <><path d="m6 9 6 6 6-6"/></>,
-    more: <><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></>,
-    bell: <><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></>,
-    download: <><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></>,
-    sliders: <><path d="M4 6h9"/><path d="M17 6h3"/><circle cx="15" cy="6" r="2"/><path d="M4 12h3"/><path d="M11 12h9"/><circle cx="9" cy="12" r="2"/><path d="M4 18h13"/><path d="M21 18h-1"/><circle cx="19" cy="18" r="2"/></>,
-    check: <><path d="m5 12 5 5L20 7"/></>,
-    lightning: <><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></>,
-    grid: <><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>,
-    'chevron-left': <><path d="m15 6-6 6 6 6"/></>,
-    'chevron-right': <><path d="m9 6 6 6-6 6"/></>,
-    refresh: <><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></>,
-    user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
-    palette: <><path d="M12 3a9 9 0 1 0 0 18c1.1 0 2-.9 2-2v-1a2 2 0 0 1 2-2h2a3 3 0 0 0 3-3 9 9 0 0 0-9-9z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></>,
-    keyboard: <><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></>,
-    logout: <><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></>,
-  };
-  return <svg viewBox="0 0 24 24" style={s}>{paths[name] || null}</svg>;
+const EMPTY_FILTERS = {
+  statuses: [], priorities: [], regions: [], owners: [],
+  budgetMin: '', budgetMax: '', progressMin: '', progressMax: '',
 };
 
-/* ===========================================================
-   Data
-=========================================================== */
-const OWNERS = [
-  { n: 'Mara Velez', c: '#2e5aac' }, { n: 'Omar Khatri', c: '#0e7a4d' },
-  { n: 'Priya Shah', c: '#8a5a00' }, { n: 'Ines Dubois', c: '#a6343e' },
-  { n: 'Theo Lund', c: '#5e35b1' }, { n: 'Sana Koh', c: '#00796b' },
-  { n: 'Jules Rhee', c: '#c0392b' }, { n: 'Bea Okafor', c: '#455a64' },
-];
-const STATUSES = ['Active','Paused','Draft','Archived','Review'];
-const PRIORITIES = ['Low','Medium','High','Urgent'];
-const REGIONS = ['EMEA','AMER','APAC','LATAM'];
-
-const rand = (s => () => (s = (s * 9301 + 49297) % 233280) / 233280)(42);
-const pick = a => a[Math.floor(rand() * a.length)];
-const NAMES = ['Horizon','Meridian','Atlas','Ember','Drift','Pivot','Cascade','Orbit','Vector','Bloom','Pulse','Nova','Arcadia','Helix','Summit','Tessera','Juniper','Echo','Monolith','Vanta','Argent','Crux','Plume','Ridge'];
-const SUFFIX = ['Migration','Rollout','Refactor','Launch','Audit','Review','Sync','Campaign','Pipeline','Rebuild','Expansion'];
-const FIRST_NAMES = ['Anna','Lukas','Sofia','Mateo','Emma','Noah','Lea','Finn','Mila','Jonas','Nora','Elias','Freya','Hugo','Iris','Otto','Lena','Axel','Maya','Tomas','Sara','Henrik','Ida','Viktor','Alma','Bram','Eva','Ruben'];
-const LAST_NAMES = ['Jansen','Peeters','Van Damme','De Smet','Mertens','Claes','Dubois','Lambert','Willems','Maes','Janssens','Declercq','Hermans','Vermeulen','Desmet','Cools','Goossens','Michiels','Pauwels','Nys'];
-const STREETS = ['Grote Markt','Keizerstraat','Nationalestraat','Meir','Lange Nieuwstraat','Groenplaats','Kammenstraat','Schoenmarkt','Hoogstraat','Sint-Jansplein'];
-const CITIES = [
-  { city: 'Antwerpen', zip: '2000' }, { city: 'Brussel', zip: '1000' },
-  { city: 'Gent', zip: '9000' }, { city: 'Leuven', zip: '3000' },
-  { city: 'Brugge', zip: '8000' }, { city: 'Mechelen', zip: '2800' },
-  { city: 'Hasselt', zip: '3500' }, { city: 'Namur', zip: '5000' },
-];
-const ROWS = Array.from({ length: 42 }, (_, i) => {
-  const owner = pick(OWNERS);
-  const firstName = pick(FIRST_NAMES);
-  const lastName = pick(LAST_NAMES);
-  const loc = pick(CITIES);
-  const street = pick(STREETS);
-  const nr = Math.floor(rand() * 180) + 1;
-  return {
-    id: `TKN-${1024 + i}`,
-    name: `${pick(NAMES)} ${pick(SUFFIX)}`,
-    owner,
-    status: pick(STATUSES),
-    priority: pick(PRIORITIES),
-    region: pick(REGIONS),
-    budget: Math.round(rand() * 900 + 40) * 1000,
-    progress: Math.round(rand() * 100),
-    updated: new Date(2026, 2, Math.floor(rand() * 60) + 1),
-    firstName,
-    lastName,
-    email: `${firstName}.${lastName}`.toLowerCase().replace(/\s+/g,'') + '@example.com',
-    address: `${street} ${nr}, ${loc.zip} ${loc.city}`,
-  };
-});
-
-const statusBadge = (s) => {
-  const map = { Active:'success', Paused:'warning', Draft:'neutral', Archived:'neutral', Review:'info' };
-  return map[s] || 'neutral';
-};
-const priorityBadge = (p) => {
-  const map = { Low:'neutral', Medium:'info', High:'warning', Urgent:'destructive' };
-  return map[p];
-};
-const fmtMoney = n => '$' + n.toLocaleString();
-const fmtDate = d => d.toLocaleDateString('en', { month: 'short', day: 'numeric' });
-const initials = n => n.split(' ').map(w=>w[0]).slice(0,2).join('');
+const projectUrl = id => `${import.meta.env.BASE_URL}projects/${id}/`;
+const homeUrl = () => import.meta.env.BASE_URL;
+const teamUrl = () => `${import.meta.env.BASE_URL}team-members/`;
+const memberUrl = id => `${import.meta.env.BASE_URL}team-members/${id}/`;
 
 /* ===========================================================
    Tweaks
@@ -108,6 +29,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "primary": "#1a3a8f",
   "primaryForeground": "#ffffff",
   "primaryContainer": "#dfe6ff",
+  "tonal": "#1a3a8f",
   "secondary": "#eeece7",
   "secondaryForeground": "#1b1b1f",
   "accent": "#b84a7a",
@@ -135,6 +57,7 @@ const TWEAK_SPEC = [
     { key: 'primary', label: 'Primary', type: 'color', cssVar: '--primary', derive: (v) => ({ '--primary-hover': shade(v, -12) }) },
     { key: 'primaryForeground', label: 'Primary foreground', type: 'color', cssVar: '--primary-foreground' },
     { key: 'primaryContainer', label: 'Primary container', type: 'color', cssVar: '--primary-container' },
+    { key: 'tonal', label: 'Tonal', type: 'color', cssVar: '--tonal' },
     { key: 'secondary', label: 'Secondary', type: 'color', cssVar: '--secondary' },
     { key: 'secondaryForeground', label: 'Secondary foreground', type: 'color', cssVar: '--secondary-foreground' },
     { key: 'accent', label: 'Accent', type: 'color', cssVar: '--accent', derive: (v) => ({ '--on-accent-container': shade(v, -45) }) },
@@ -230,112 +153,6 @@ function applyTweaks(vals) {
       Object.entries(d).forEach(([k,val]) => root.style.setProperty(k, val));
     }
   }));
-}
-
-/* ===========================================================
-   Sidebar
-=========================================================== */
-const NAV = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', count: null, children: null },
-  { id: 'tokens', label: 'Tokens', icon: 'tag', children: [
-    { id: 'tokens.all', label: 'All tokens' },
-    { id: 'tokens.color', label: 'Color' },
-    { id: 'tokens.type', label: 'Type' },
-    { id: 'tokens.shape', label: 'Shape' },
-  ], defaultOpen: true, activeChild: 'tokens.all' },
-  { id: 'projects', label: 'Projects', icon: 'folder', count: 42, children: [
-    { id: 'projects.active', label: 'Active' },
-    { id: 'projects.review', label: 'In review' },
-    { id: 'projects.archived', label: 'Archived' },
-  ]},
-  { id: 'team', label: 'Team', icon: 'users', children: [
-    { id: 'team.members', label: 'Members' },
-    { id: 'team.groups', label: 'Groups' },
-    { id: 'team.invites', label: 'Invites', count: 3 },
-  ]},
-  { id: 'analytics', label: 'Analytics', icon: 'chart', children: null },
-  { id: 'inbox', label: 'Inbox', icon: 'inbox', count: 12, children: null },
-  { id: 'settings', label: 'Settings', icon: 'settings', children: [
-    { id: 'settings.general', label: 'General' },
-    { id: 'settings.appearance', label: 'Appearance' },
-    { id: 'settings.integrations', label: 'Integrations' },
-  ]},
-];
-
-function Sidebar({ active, setActive, collapsed, setCollapsed }) {
-  const [open, setOpen] = useState(() => {
-    const s = {};
-    NAV.forEach(n => { if (n.children) s[n.id] = !!n.defaultOpen; });
-    return s;
-  });
-
-  return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      <div className="brand">
-        <div className="brand-mark">TP</div>
-        {!collapsed && (
-          <div className="brand-text">
-            <div className="brand-name">Token Playground</div>
-            <div className="brand-sub">Design research</div>
-          </div>
-        )}
-        <button
-          className="btn-icon sidebar-toggle"
-          onClick={() => setCollapsed(c => !c)}
-          title={collapsed ? 'Expand' : 'Collapse'}
-        >
-          <Icon name={collapsed ? 'chevron-right' : 'chevron-left'} size={16} stroke={2}/>
-        </button>
-      </div>
-
-      {!collapsed && <div className="nav-group-title">Workspace</div>}
-      {NAV.map(item => {
-        const hasKids = !!item.children;
-        const isOpen = !!open[item.id] && !collapsed;
-        const isActive = active === item.id || (hasKids && item.children.some(c => c.id === active));
-        return (
-          <div key={item.id}>
-            <div
-              className={`nav-item ${isActive && !hasKids ? 'active' : ''} ${hasKids && isActive && collapsed ? 'active' : ''} ${isOpen ? 'open' : ''}`}
-              onClick={() => {
-                if (collapsed) {
-                  setCollapsed(false);
-                  if (hasKids) setOpen(o => ({...o, [item.id]: true}));
-                  else setActive(item.id);
-                  return;
-                }
-                if (hasKids) setOpen(o => ({...o, [item.id]: !o[item.id]}));
-                else setActive(item.id);
-              }}
-              title={collapsed ? item.label : ''}
-            >
-              <span className="nav-icon"><Icon name={item.icon} size={18}/></span>
-              {!collapsed && <span className="nav-label">{item.label}</span>}
-              {!collapsed && item.count != null && !hasKids && <span className="count">{item.count}</span>}
-              {!collapsed && hasKids && <span className="caret"><Icon name="caret" size={16} stroke={2}/></span>}
-            </div>
-            {hasKids && !collapsed && (
-              <div className={`nav-children ${isOpen ? 'open' : ''}`}>
-                <div>
-                  {item.children.map(c => (
-                    <div
-                      key={c.id}
-                      className={`nav-sub ${active === c.id ? 'active' : ''}`}
-                      onClick={() => setActive(c.id)}
-                    >
-                      <span className="dot"/>
-                      <span>{c.label}</span>
-                      {c.count != null && <span className="count" style={{marginLeft:'auto'}}>{c.count}</span>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </aside>
-  );
 }
 
 /* ===========================================================
@@ -526,18 +343,7 @@ const COLUMNS = [
   { key: 'updated',  label: 'Updated',  sort: r => r.updated.getTime() },
 ];
 
-function ProgressBar({ value }) {
-  return (
-    <div style={{display:'flex', alignItems:'center', gap:10, minWidth:140}}>
-      <div style={{flex:1, height:6, background:'var(--surface-container-high)', borderRadius:'var(--radius-pill)', overflow:'hidden'}}>
-        <div style={{width:`${value}%`, height:'100%', background:'var(--primary)', borderRadius:'inherit', transition:'width 200ms ease'}}/>
-      </div>
-      <span className="cell-mono" style={{width:32, textAlign:'right'}}>{value}%</span>
-    </div>
-  );
-}
-
-function Table({ rows, selected, setSelected, onOpen }) {
+function Table({ rows, selected, setSelected, onOpen, onRowClick }) {
   const [sort, setSort] = useState({ key: 'updated', dir: 'desc' });
   const [focusIdx, setFocusIdx] = useState(0);
   const wrapRef = useRef(null);
@@ -604,7 +410,7 @@ function Table({ rows, selected, setSelected, onOpen }) {
           <tr
             key={r.id}
             className={selected === r.id ? 'sel' : ''}
-            onClick={() => { setFocusIdx(i); setSelected(selected === r.id ? null : r.id); }}
+            onClick={() => { setFocusIdx(i); onRowClick ? onRowClick(r) : setSelected(selected === r.id ? null : r.id); }}
             style={i === focusIdx ? { boxShadow: 'inset 0 0 0 2px var(--primary)' } : undefined}
           >
             <td><span className="cell-mono cell-muted">{r.id}</span></td>
@@ -633,16 +439,18 @@ function Table({ rows, selected, setSelected, onOpen }) {
 }
 
 /* ===========================================================
-   Simple table (plain text only — no colors, badges, avatars)
+   Simple table — used on the Team members page
 =========================================================== */
 const SIMPLE_COLUMNS = [
-  { key: 'firstName', label: 'First name', sort: r => r.firstName },
-  { key: 'lastName',  label: 'Last name',  sort: r => r.lastName },
-  { key: 'email',     label: 'Email',      sort: r => r.email },
-  { key: 'address',   label: 'Home address', sort: r => r.address },
+  { key: 'firstName',    label: 'First name',   sort: r => r.firstName,    minWidth: 160 },
+  { key: 'lastName',     label: 'Last name',    sort: r => r.lastName,     minWidth: 180 },
+  { key: 'email',        label: 'Email',        sort: r => r.email,        minWidth: 280 },
+  { key: 'address',      label: 'Home address', sort: r => r.address,      minWidth: 320 },
+  { key: 'memberStatus', label: 'Status',       sort: r => r.memberStatus, minWidth: 140 },
+  { key: 'prospect',     label: 'Prospect',     sort: r => r.prospect,     minWidth: 120 },
 ];
 
-function SimpleTable({ rows, onOpen }) {
+function SimpleTable({ rows, onOpen, onRowClick }) {
   const [sort, setSort] = useState({ key: 'lastName', dir: 'asc' });
   const [focusIdx, setFocusIdx] = useState(0);
   const sorted = useMemo(() => {
@@ -666,8 +474,10 @@ function SimpleTable({ rows, onOpen }) {
     else if (e.key === ' ') { e.preventDefault(); onOpen?.(sorted[focusIdx]); }
   };
 
+  const tableMinWidth = SIMPLE_COLUMNS.reduce((sum, c) => sum + (c.minWidth || 0), 0);
+
   return (
-    <table className="dt" tabIndex={0} onKeyDown={onKey} style={{outline:'none'}}>
+    <table className="dt" tabIndex={0} onKeyDown={onKey} style={{outline:'none', minWidth: tableMinWidth}}>
       <thead>
         <tr>
           {SIMPLE_COLUMNS.map(c => (
@@ -675,6 +485,7 @@ function SimpleTable({ rows, onOpen }) {
               key={c.key}
               onClick={() => toggleSort(c.key)}
               className={sort.key === c.key ? 'sorted' : ''}
+              style={c.minWidth ? { minWidth: c.minWidth } : undefined}
             >
               {c.label}
               <span className="sort-ind">
@@ -688,13 +499,20 @@ function SimpleTable({ rows, onOpen }) {
         {sorted.map((r, i) => (
           <tr
             key={r.id}
-            onClick={() => setFocusIdx(i)}
-            style={i === focusIdx ? { boxShadow: 'inset 0 0 0 2px var(--primary)' } : undefined}
+            onClick={() => { setFocusIdx(i); onRowClick?.(r); }}
+            style={{
+              cursor: onRowClick ? 'pointer' : 'default',
+              ...(i === focusIdx ? { boxShadow: 'inset 0 0 0 2px var(--primary)' } : {}),
+            }}
           >
-            <td>{r.firstName}</td>
-            <td>{r.lastName}</td>
-            <td className="cell-muted">{r.email}</td>
-            <td className="cell-muted">{r.address}</td>
+            <td style={{whiteSpace:'nowrap'}}>{r.firstName}</td>
+            <td style={{whiteSpace:'nowrap'}}>{r.lastName}</td>
+            <td className="cell-muted" style={{whiteSpace:'nowrap'}}>{r.email}</td>
+            <td className="cell-muted" style={{whiteSpace:'nowrap'}}>{r.address}</td>
+            <td style={{whiteSpace:'nowrap'}}>
+              <span className={`badge ${memberStatusBadge(r.memberStatus)}`}><span className="bdot"/>{r.memberStatus}</span>
+            </td>
+            <td style={{whiteSpace:'nowrap'}}>{r.prospect}</td>
           </tr>
         ))}
         {sorted.length === 0 && (
@@ -979,7 +797,7 @@ function FavoritesDialog({ open, onClose, favorites, onApply, onDelete, onRename
 /* ===========================================================
    User menu
 =========================================================== */
-function UserMenu({ tweaksOpen, setTweaksOpen, tweaks, setTweaks, favorites, setFavorites }) {
+export function UserMenu({ tweaksOpen, setTweaksOpen, tweaks, setTweaks, favorites, setFavorites, collapsed }) {
   const [open, setOpen] = useState(false);
   const [favOpen, setFavOpen] = useState(false);
   const ref = useRef(null);
@@ -1030,10 +848,14 @@ function UserMenu({ tweaksOpen, setTweaksOpen, tweaks, setTweaks, favorites, set
   };
   return (
     <div className="user-menu-wrap" ref={ref}>
-      <button className="user-btn" onClick={() => setOpen(o => !o)}>
+      <button
+        className={`user-btn ${open ? 'active' : ''}`}
+        onClick={() => setOpen(o => !o)}
+        title={collapsed ? 'Mara Velez' : ''}
+      >
         <span className="avatar" style={{background:'var(--primary)'}}>MV</span>
-        <span className="uname">Mara Velez</span>
-        <span className="caret"><Icon name="caret" size={14} stroke={2}/></span>
+        {!collapsed && <span className="uname">Mara Velez</span>}
+        {!collapsed && <span className="caret"><Icon name="caret" size={14} stroke={2}/></span>}
       </button>
       {open && (
         <div className="user-menu">
@@ -1105,17 +927,45 @@ function UserMenu({ tweaksOpen, setTweaksOpen, tweaks, setTweaks, favorites, set
 /* ===========================================================
    App
 =========================================================== */
-function App() {
+function App({ detailId = null, memberDetailId = null, view = 'projects' }) {
+  const isTeam = view === 'team' || memberDetailId != null;
+  const detailItem = detailId ? ROWS.find(r => r.id === detailId) || null : null;
+  const memberItem = memberDetailId ? ROWS.find(r => r.id === memberDetailId) || null : null;
+  const openDetail = item => {
+    window.location.href = isTeam ? memberUrl(item.id) : projectUrl(item.id);
+  };
+  const closeDetail = () => { window.location.href = homeUrl(); };
+  const closeMemberDetail = () => { window.location.href = teamUrl(); };
+  const toggleView = () => { window.location.href = isTeam ? homeUrl() : teamUrl(); };
+
   const [active, setActive] = useState('tokens.all');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
-  const [statusFilter, setStatusFilter] = useState(null);
-  const [priorityFilter, setPriorityFilter] = useState(null);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const filtersActive =
+    filters.statuses.length + filters.priorities.length + filters.regions.length + filters.owners.length > 0
+    || filters.budgetMin !== '' || filters.budgetMax !== ''
+    || filters.progressMin !== '' || filters.progressMax !== '';
+  const clearFilters = () => setFilters(EMPTY_FILTERS);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [statusPopoverFor, setStatusPopoverFor] = useState(null);  // { status, anchorRect }
   const [showTweaks, setShowTweaks] = useState(false);
   const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
-  const [navCollapsed, setNavCollapsed] = useState(false);
-  const [simpleMode, setSimpleMode] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem('navCollapsed') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('navCollapsed', navCollapsed ? '1' : '0'); } catch {}
+    if (navCollapsed) document.documentElement.dataset.navCollapsed = '1';
+    else delete document.documentElement.dataset.navCollapsed;
+  }, [navCollapsed]);
   const [enterDialogOpen, setEnterDialogOpen] = useState(false);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const submitNewMember = () => {
+    // Mock create — navigate to a member detail to simulate redirect to the new entry.
+    window.location.href = memberUrl(ROWS[0].id);
+  };
   const lastFocusRef = useRef(null);
   const openEnterDialog = () => {
     lastFocusRef.current = document.activeElement;
@@ -1172,13 +1022,20 @@ function App() {
   // derived filtered rows
   const filtered = useMemo(() => {
     const q = parseTokens(search);
+    const f = filters;
     return ROWS.filter(r => {
       if (!rowMatches(r, q)) return false;
-      if (statusFilter && r.status !== statusFilter) return false;
-      if (priorityFilter && r.priority !== priorityFilter) return false;
+      if (f.statuses.length && !f.statuses.includes(r.status)) return false;
+      if (f.priorities.length && !f.priorities.includes(r.priority)) return false;
+      if (f.regions.length && !f.regions.includes(r.region)) return false;
+      if (f.owners.length && !f.owners.includes(r.owner.n)) return false;
+      if (f.budgetMin !== '' && r.budget < +f.budgetMin) return false;
+      if (f.budgetMax !== '' && r.budget > +f.budgetMax) return false;
+      if (f.progressMin !== '' && r.progress < +f.progressMin) return false;
+      if (f.progressMax !== '' && r.progress > +f.progressMax) return false;
       return true;
     });
-  }, [search, statusFilter, priorityFilter]);
+  }, [search, filters]);
 
   const statusCounts = useMemo(() => {
     const c = {}; ROWS.forEach(r => c[r.status] = (c[r.status]||0)+1); return c;
@@ -1186,25 +1043,44 @@ function App() {
 
   return (
     <div className={`app ${navCollapsed ? 'nav-collapsed' : ''}`}>
-      <Sidebar active={active} setActive={setActive} collapsed={navCollapsed} setCollapsed={setNavCollapsed}/>
+      <Sidebar
+        active={active}
+        setActive={setActive}
+        collapsed={navCollapsed}
+        setCollapsed={setNavCollapsed}
+        tweaksOpen={showTweaks}
+        setTweaksOpen={setShowTweaks}
+        tweaks={tweaks}
+        setTweaks={setTweaks}
+        favorites={favorites}
+        setFavorites={setFavorites}
+      />
 
       <main className="main">
+        {memberItem ? (
+          <TeamMemberPage item={memberItem} onBack={closeMemberDetail}/>
+        ) : detailItem ? (
+          <DetailPage item={detailItem} onBack={closeDetail}/>
+        ) : (
+        <>
         <div className="page-header">
           <div>
-            <h1 className="page-title">All tokens</h1>
-            <div className="page-subtitle">Play with color, shape, stroke and density. Everything below reads from tokens.</div>
+            <h1 className="page-title">{isTeam ? 'Team members' : 'All tokens'}</h1>
+            <div className="page-subtitle">
+              {isTeam
+                ? 'Browse and manage your team. Each row is a contact assigned to a project.'
+                : 'Play with color, shape, stroke and density. Everything below reads from tokens.'}
+            </div>
           </div>
           <div className="flex gap-2" style={{alignItems:'center'}}>
             <button className="btn btn-outlined"><Icon name="download" size={16}/> Export</button>
-            <button className="btn btn-primary"><Icon name="plus" size={16} stroke={2.25}/> New project</button>
-            <UserMenu
-              tweaksOpen={showTweaks}
-              setTweaksOpen={setShowTweaks}
-              tweaks={tweaks}
-              setTweaks={setTweaks}
-              favorites={favorites}
-              setFavorites={setFavorites}
-            />
+            {isTeam ? (
+              <button className="btn btn-primary" onClick={() => setAddMemberOpen(true)}>
+                <Icon name="plus" size={16} stroke={2.25}/> Add member
+              </button>
+            ) : (
+              <button className="btn btn-primary"><Icon name="plus" size={16} stroke={2.25}/> New project</button>
+            )}
           </div>
         </div>
 
@@ -1213,25 +1089,41 @@ function App() {
             <SearchBar value={search} setValue={setSearch}/>
           </div>
           <button
-            className={`chip ${simpleMode ? 'on' : ''}`}
-            onClick={() => setSimpleMode(m => !m)}
-            title="Toggle simplified text-only table"
+            className={`chip ${isTeam ? 'on' : ''}`}
+            onClick={toggleView}
+            title={isTeam ? 'Back to project overview' : 'Switch to team members view'}
           >
             <Icon name="file" size={14} stroke={2}/> Simple view
           </button>
-          <button className="chip" onClick={() => setStatusFilter(null)}><Icon name="filter" size={14} stroke={2}/> All</button>
-          {!simpleMode && STATUSES.map(s => (
+          <button
+            className={`chip ${filtersActive ? 'on' : ''}`}
+            onClick={() => setFilterModalOpen(true)}
+            title="Open all filters"
+          >
+            <Icon name="filter" size={14} stroke={2}/> All filters
+            {filtersActive && (
+              <span className="chip-count">
+                {filters.statuses.length + filters.priorities.length + filters.regions.length + filters.owners.length
+                  + (filters.budgetMin !== '' || filters.budgetMax !== '' ? 1 : 0)
+                  + (filters.progressMin !== '' || filters.progressMax !== '' ? 1 : 0)}
+              </span>
+            )}
+          </button>
+          {!isTeam && STATUSES.map(s => (
             <button
               key={s}
-              className={`chip ${statusFilter === s ? 'on' : ''}`}
-              onClick={() => setStatusFilter(statusFilter === s ? null : s)}
+              className={`chip ${filters.statuses.includes(s) ? 'on' : ''}`}
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setStatusPopoverFor({ status: s, anchorRect: { left: r.left, top: r.bottom + 6 } });
+              }}
             >
               {s}
               <span className="chip-count">{statusCounts[s] || 0}</span>
             </button>
           ))}
           <div className="ml-auto flex gap-2">
-            <button className="btn btn-text" onClick={() => { setSearch(''); setStatusFilter(null); setPriorityFilter(null); }}>
+            <button className="btn btn-text" onClick={() => { setSearch(''); clearFilters(); }}>
               <Icon name="refresh" size={14} stroke={2}/> Clear
             </button>
           </div>
@@ -1240,17 +1132,17 @@ function App() {
         <div className="table-card">
           <div className="table-top">
             <span className="table-count">
-              Showing <b>{filtered.length}</b> of <b>{ROWS.length}</b> projects
+              Showing <b>{filtered.length}</b> of <b>{ROWS.length}</b> {isTeam ? 'members' : 'projects'}
             </span>
             <div className="ml-auto flex gap-2">
               <button className="btn btn-outlined"><Icon name="sliders" size={14} stroke={2}/> Columns</button>
               <button className="btn btn-tonal"><Icon name="grid" size={14} stroke={2}/> Group by</button>
             </div>
           </div>
-          <div style={{overflow:'auto'}}>
-            {simpleMode
-              ? <SimpleTable rows={filtered} onOpen={openEnterDialog}/>
-              : <Table rows={filtered} selected={selected} setSelected={setSelected} onOpen={openEnterDialog}/>}
+          <div style={{overflowX:'auto', overflowY:'visible'}}>
+            {isTeam
+              ? <SimpleTable rows={filtered} onOpen={openEnterDialog} onRowClick={openDetail}/>
+              : <Table rows={filtered} selected={selected} setSelected={setSelected} onOpen={openEnterDialog} onRowClick={openDetail}/>}
           </div>
           <div className="pagination">
             <span>Rows per page: <b style={{color:'var(--on-surface)'}}>25</b></span>
@@ -1263,6 +1155,8 @@ function App() {
             </div>
           </div>
         </div>
+        </>
+        )}
       </main>
 
       {enterDialogOpen && (
@@ -1290,6 +1184,32 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      <MemberEntryModal
+        open={addMemberOpen}
+        onClose={() => setAddMemberOpen(false)}
+        onSubmit={submitNewMember}
+      />
+
+      <FilterModal
+        open={filterModalOpen}
+        initial={filters}
+        onClose={() => setFilterModalOpen(false)}
+        onApply={(next) => { setFilters(next); setFilterModalOpen(false); }}
+        onClear={() => { clearFilters(); setFilterModalOpen(false); }}
+      />
+
+      {statusPopoverFor && (
+        <FilterPopover
+          status={statusPopoverFor.status}
+          anchorRect={statusPopoverFor.anchorRect}
+          isSelected={filters.statuses.includes(statusPopoverFor.status)}
+          onClose={() => setStatusPopoverFor(null)}
+          onShowOnly={(s) => { setFilters(f => ({ ...f, statuses: [s] })); setStatusPopoverFor(null); }}
+          onAdd={(s) => { setFilters(f => ({ ...f, statuses: f.statuses.includes(s) ? f.statuses : [...f.statuses, s] })); setStatusPopoverFor(null); }}
+          onRemove={(s) => { setFilters(f => ({ ...f, statuses: f.statuses.filter(x => x !== s) })); setStatusPopoverFor(null); }}
+        />
       )}
 
       <TweaksPanel

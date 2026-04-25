@@ -1,0 +1,17 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import App from '../../components/App.jsx';
+import { ROWS } from '../../data/rows.js';
+
+export function getStaticPaths() {
+  return ROWS.map(row => ({ params: { id: row.id } }));
+}
+
+const { id } = Astro.params;
+const row = ROWS.find(r => r.id === id);
+const fullName = row ? `${row.firstName} ${row.lastName}` : id;
+---
+
+<Layout title={`${fullName} · Team members · Token Playground`}>
+  <App client:load memberDetailId={id} />
+</Layout>
